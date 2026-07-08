@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/parking", "destination": "https://live-eaton-square-parking.vercel.app/index.html" },
+    { "source": "/parking/", "destination": "https://live-eaton-square-parking.vercel.app/index.html" },
+    { "source": "/parking/:path*", "destination": "https://live-eaton-square-parking.vercel.app/:path*" }
+  ]
+}
