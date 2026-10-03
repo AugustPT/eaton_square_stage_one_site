@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eaton Square Parking Results</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#122033;background:#f4f6f8}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:900px;margin:auto;padding:28px 18px 56px}
+h1{margin:6px 0 4px;font-size:32px}.sub{color:#667085;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card,.panel{background:#fff;border:1px solid #e4e7ec;border-radius:16px;padding:18px}
+.k{font-size:12px;font-weight:700;text-transform:uppercase;color:#667085}.v{font-size:30px;font-weight:800;margin-top:7px}
+.panel{margin-top:14px}.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:12px;font-weight:700;color:#667085;display:block;margin-bottom:6px}
+input{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font:inherit}
+.biz{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #eee}.biz:first-child{border-top:0}
+.note{font-size:12px;color:#667085;margin-top:12px}
+@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}.inputs{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="k">Eaton Square Parking</div><h1>Results</h1><p class="sub">What the parking system is actually doing.</p>
+<div class="grid">
+<div class="card"><div class="k">Validations</div><div class="v" id="validations">—</div></div>
+<div class="card"><div class="k">Businesses</div><div class="v" id="businesses">—</div></div>
+<div class="card"><div class="k">Change</div><div class="v" id="change">—</div></div>
+<div class="card"><div class="k">All time</div><div class="v" id="alltime">—</div></div>
+</div>
+<div class="panel"><div class="k">Business value</div><div class="inputs">
+<div><label>Old manual minutes per validation</label><input id="minutes" type="number" min="0" step=".1" placeholder="Example: 4.5"></div>
+<div><label>Optional staff cost per hour</label><input id="rate" type="number" min="0" step=".01" placeholder="Example: 25"></div>
+</div>
+<div class="grid" style="margin-top:12px">
+<div class="card"><div class="k">Actions removed</div><div class="v" id="actions">—</div></div>
+<div class="card"><div class="k">Time saved</div><div class="v" id="hours">—</div></div>
+<div class="card"><div class="k">Labor value</div><div class="v" id="value">—</div></div>
+<div class="card"><div class="k">Month</div><div class="v" id="month">—</div></div>
+</div></div>
+<div class="panel"><div class="k">Usage by business</div><div id="byBusiness" style="margin-top:10px"></div></div>
+<div class="note">Only aggregate counts are shown here. License plates and member names are never returned by this page.</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);let data;
+const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
+function pct(c,p){if(!p)return c?'New':'0%';const n=(c-p)/p*100;return (n>0?'+':'')+Math.round(n)+'%'}
+function recalc(){if(!data)return;const m=Number($('minutes').value||0),r=Number($('rate').value||0),h=data.current.validations*m/60;$('actions').textContent=data.current.validations;$('hours').textContent=m?h.toFixed(1)+' hrs':'Set baseline';$('value').textContent=m&&r?money(h*r):'Optional';localStorage.setItem('esv_minutes',$('minutes').value);localStorage.setItem('esv_rate',$('rate').value)}
+$('minutes').value=localStorage.getItem('esv_minutes')||'';$('rate').value=localStorage.getItem('esv_rate')||'';$('minutes').oninput=recalc;$('rate').oninput=recalc;
+fetch('/api/parking-results',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(!d.ok)throw new Error(d.error);data=d;$('validations').textContent=d.current.validations;$('businesses').textContent=d.current.activeBusinesses;$('change').textContent=pct(d.current.validations,d.previous.validations);$('alltime').textContent=d.totalIssued;$('month').textContent=d.month;const box=$('byBusiness');box.innerHTML=d.current.byBusiness.length?'':'<div class="note">No validations recorded this month yet.</div>';d.current.byBusiness.forEach(x=>{const e=document.createElement('div');e.className='biz';e.innerHTML='<span></span><strong></strong>';e.firstChild.textContent=x.slug.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());e.lastChild.textContent=x.validations;box.appendChild(e)});recalc()}).catch(e=>{$('byBusiness').innerHTML='<div class="note">Results unavailable: '+e.message+'</div>'});
+</script></body></html>
