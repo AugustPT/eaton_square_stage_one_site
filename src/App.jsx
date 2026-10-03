@@ -6,6 +6,15 @@ function trackEvent(name, data = {}) {
       window.va("event", { name, data });
     }
   } catch (_) {}
+  try {
+    fetch("https://apt-results-dashboard.vercel.app/api/event", {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ project: "eaton-square", name, data }),
+      keepalive: true,
+    });
+  } catch (_) {}
 }
 
 const plazaImages = {
