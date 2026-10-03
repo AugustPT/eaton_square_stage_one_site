@@ -1,5 +1,13 @@
 import React, { useMemo, useState } from "react";
 
+function trackEvent(name, data = {}) {
+  try {
+    if (typeof window !== "undefined" && typeof window.va === "function") {
+      window.va("event", { name, data });
+    }
+  } catch (_) {}
+}
+
 const plazaImages = {
   hero: "/local_images/plaza-hero.jpg",
   street: "/local_images/plaza-street.jpg",
@@ -173,9 +181,21 @@ function openExternal(url) {
 function callBusiness(business) {
   const callUrl = phoneHref(business.phone);
   if (callUrl && typeof window !== "undefined") {
+    trackEvent("Business Call", { business: business.name, category: business.category });
     window.location.href = callUrl;
     return;
   }
+  trackEvent("Business Website", { business: business.name, category: business.category });
+  openExternal(business.website);
+}
+
+function openBusinessMap(business) {
+  trackEvent("Business Map", { business: business.name, category: business.category });
+  openExternal(business.map);
+}
+
+function openBusinessWebsite(business) {
+  trackEvent("Business Website", { business: business.name, category: business.category });
   openExternal(business.website);
 }
 
@@ -217,8 +237,8 @@ function Modal({ item, onClose }) {
           {isBusiness && (
             <div className="grid gap-3 text-sm">
               <button onClick={() => callBusiness(item)} className="rounded-2xl bg-slate-950 px-5 py-4 text-center font-semibold text-white transition hover:-translate-y-0.5">{item.phone ? `Call ${item.phone}` : "Website"}</button>
-              <button onClick={() => openExternal(item.map)} className="rounded-2xl bg-[#0A3B66] px-5 py-4 text-center font-semibold text-white transition hover:-translate-y-0.5">Open Map</button>
-              <button onClick={() => openExternal(item.website)} className="rounded-2xl bg-slate-100 px-5 py-4 text-center font-semibold text-slate-950 transition hover:bg-slate-200">Website / Social</button>
+              <button onClick={() => openBusinessMap(item)} className="rounded-2xl bg-[#0A3B66] px-5 py-4 text-center font-semibold text-white transition hover:-translate-y-0.5">Open Map</button>
+              <button onClick={() => openBusinessWebsite(item)} className="rounded-2xl bg-slate-100 px-5 py-4 text-center font-semibold text-slate-950 transition hover:bg-slate-200">Website / Social</button>
             </div>
           )}
         </div>
@@ -247,7 +267,7 @@ function BusinessCard({ business, onDetails }) {
         <div className="grid grid-cols-3 gap-2">
           <ActionButton variant="dark" onClick={() => onDetails(business)}>Details</ActionButton>
           <ActionButton onClick={() => callBusiness(business)}>Call</ActionButton>
-          <ActionButton onClick={() => openExternal(business.map)}>Map</ActionButton>
+          <ActionButton onClick={() => openBusinessMap(business)}>Map</ActionButton>
         </div>
       </div>
     </article>
@@ -272,7 +292,13 @@ export default function EatonSquareStageOne() {
   const visibleBusinesses = useMemo(() => filterBusinesses(businesses, active, query), [active, query]);
   const currentVisitPanel = visitPanels[visitPanel] || visitPanels.location;
 
+  function handleBusinessDetails(business) {
+    trackEvent("Business Details", { business: business.name, category: business.category });
+    setModalItem(business);
+  }
+
   function handleVisitImageClick() {
+    trackEvent("Visit Action", { panel: visitPanel, action: currentVisitPanel.action });
     if (currentVisitPanel.link.startsWith("#")) {
       document.querySelector(currentVisitPanel.link)?.scrollIntoView({ behavior: "smooth" });
       return;
@@ -340,7 +366,7 @@ export default function EatonSquareStageOne() {
             ))}
           </div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {visibleBusinesses.map((business) => <BusinessCard key={business.name} business={business} onDetails={setModalItem} />)}
+            {visibleBusinesses.map((business) => <BusinessCard key={business.name} business={business} onDetails={handleBusinessDetails} />)}
           </div>
           {visibleBusinesses.length === 0 && <div className="rounded-[2rem] bg-white p-8 text-center text-slate-600 shadow-sm">No matches yet. Try another category or search term.</div>}
         </div>
